@@ -111,6 +111,8 @@ Examples:
   $ forge migrate ./replit-app ./nextjs-app                # Migrate with defaults
   $ forge migrate ./replit-app ./nextjs-app --auth workos  # Migrate with WorkOS auth
   $ forge migrate ./replit-app ./nextjs-app --dry-run      # Analyze without converting
+
+Full docs: https://github.com/thicks/forge/tree/main/docs
 `,
 );
 

@@ -303,10 +303,7 @@ async function runMigration(
 		await ensureDir(path.join(targetDir, "public"));
 		try {
 			const logoSrc = getAssetPath("forge-logo.png");
-			await copyFile(
-				logoSrc,
-				path.join(targetDir, "public", "forge-logo.png"),
-			);
+			await copyFile(logoSrc, path.join(targetDir, "public", "forge-logo.png"));
 			result.filesWritten.push("public/forge-logo.png");
 		} catch {
 			// Logo asset not found - non-critical
