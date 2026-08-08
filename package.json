@@ -34,6 +34,14 @@
 	],
 	"author": "Trey Hicks",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/thicks/forge.git"
+	},
+	"homepage": "https://github.com/thicks/forge#readme",
+	"bugs": {
+		"url": "https://github.com/thicks/forge/issues"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@types/fs-extra": "^11.0.4",

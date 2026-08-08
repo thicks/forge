@@ -47,6 +47,8 @@ The bootstrap flow intentionally installs only the core tooling needed to get th
 
 This keeps first-time install fast and avoids installing optional tooling before you need it.
 
+> **Trust note:** when Homebrew or nvm are missing, the bootstrap script fetches their official installers over HTTPS and pipes them directly into `bash` (the standard install method both projects publish). This trusts Homebrew's and nvm's GitHub-hosted install scripts and your system's HTTPS/DNS resolution to those hosts — no separate checksum or signature verification is performed. If you'd rather review before running, install [Homebrew](https://brew.sh) and [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) yourself first; the bootstrap script skips any tool it detects is already installed.
+
 ### What gets installed during `new` and `update`
 
 `forge` now installs heavier tooling only when a command needs it:
