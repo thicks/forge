@@ -1,0 +1,18 @@
+---
+description: Git workflow defaults for AI-assisted changes
+alwaysApply: true
+---
+
+# Git Workflow
+
+- Create a feature branch before substantial changes.
+- Name branches using the format: `<ticket-number>/<short-description>` (e.g. `PSS-123/fix-auth-redirect`).
+- Only prepend a user prefix (e.g. `th/`) to the branch name if the user explicitly requests it.
+- Use conventional commit prefixes: `feat:`, `fix:`, `chore:`, `docs:`.
+- Ask for confirmation before push, merge, rebase, or reset.
+- Before committing, run `pnpm lint` and fix any reported issues.
+- When creating a PR, include:
+  - A short summary of what changed and why
+  - A test plan with commands or manual verification steps
+- When creating a PR, ask the user: "Is there a Linear ticket number for this PR? (e.g. PSS-123, leave blank to skip)". If provided, include a plain link at the bottom of the PR body: `[TICKET](https://linear.app/your-org/issue/TICKET)`. If blank, omit it entirely.
+- Do NOT add "Made with Cursor", "Made with Claude", or any AI attribution to PR descriptions or commit messages.

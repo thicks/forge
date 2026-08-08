@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Cursor scratchpad
+.cursor/scratchpad/
+
+# Local Claude Code settings (machine-specific)
+.claude/settings.local.json
+
+# Manual QA test output
+test-working-dir/
+
+workdir/
+
+.aliases.test
+
+.aliases.test.zsh

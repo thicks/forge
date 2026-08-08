@@ -1,0 +1,60 @@
+{
+	"skills": [
+		{
+			"id": "typecheck",
+			"source": "local",
+			"asset": "claude/skills/typecheck",
+			"always": true
+		},
+		{
+			"id": "test",
+			"source": "local",
+			"asset": "claude/skills/test",
+			"always": true
+		},
+		{
+			"id": "git-pr",
+			"source": "local",
+			"asset": "claude/skills/git-pr",
+			"always": true
+		},
+		{
+			"id": "code-review",
+			"source": "local",
+			"asset": "claude/skills/code-review",
+			"always": true
+		},
+		{
+			"id": "commit-helper",
+			"source": "local",
+			"asset": "claude/skills/commit-helper",
+			"always": true
+		},
+		{
+			"id": "agent-browser",
+			"source": "local",
+			"asset": "claude/skills/agent-browser",
+			"always": true
+		},
+		{
+			"id": "db-migrate",
+			"source": "local",
+			"asset": "claude/skills/db-migrate",
+			"when": "db"
+		},
+		{
+			"id": "vercel-react-best-practices",
+			"source": "repo",
+			"repo": "https://github.com/vercel-labs/agent-skills",
+			"skills": ["vercel-react-best-practices", "web-design-guidelines"],
+			"always": true
+		},
+		{
+			"id": "better-auth",
+			"source": "repo",
+			"repo": "https://github.com/better-auth/skills",
+			"skills": ["better-auth-best-practices"],
+			"when": "auth:better-auth"
+		}
+	]
+}
