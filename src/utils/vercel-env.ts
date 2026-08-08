@@ -8,7 +8,7 @@ export type VercelEnvType = "plain" | "secret" | "encrypted" | "sensitive";
 export interface VercelEnvVar {
 	id: string;
 	key: string;
-	value: string;
+	value?: string;
 	target: VercelEnvTarget[];
 	type: VercelEnvType;
 	/** Whether the value is readable (sensitive vars may be unreadable) */
@@ -82,7 +82,9 @@ export async function listVercelEnvVars(
 	}
 
 	const data = (await res.json()) as { envs: VercelEnvVar[] };
-	return (data.envs ?? []).filter((v) => v.target.includes(target));
+	return (data.envs ?? [])
+		.filter((v) => v.target.includes(target))
+		.map((v) => (v.decrypted === false ? { ...v, value: undefined } : v));
 }
 
 /** Create or update an env var for a project via the Vercel REST API. */

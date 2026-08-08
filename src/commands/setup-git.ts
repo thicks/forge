@@ -112,14 +112,11 @@ export async function setupGit(
 			await withSpinner("Pushing to remote", async () => {
 				await gitPush("origin", branch, cwd, true);
 			});
-		} catch {
-			// Push rejected — remote has divergent history (e.g. leftover from a previous run)
-			log.warn(
-				"Push rejected — remote has commits not present locally. Force-pushing to overwrite remote...",
+		} catch (error) {
+			log.error(
+				`Could not push to ${repoFullName} without overwriting remote history. Reconcile the remote manually and retry: ${error instanceof Error ? error.message : String(error)}`,
 			);
-			await withSpinner("Force-pushing to remote", async () => {
-				await gitPush("origin", branch, cwd, true, true);
-			});
+			throw error;
 		}
 		log.success(`Linked and pushed to ${repoFullName}`);
 		return;

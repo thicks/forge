@@ -62,3 +62,10 @@ gh auth status
 ```
 
 Look for a line like `Token scopes: 'repo', 'workflow', ...` — `workflow` must be present.
+# Recovery and Safety
+
+If GitHub setup reports divergent history, reconcile the remote manually and retry; Forge will not force-push over remote commits.
+
+If self-update reports that local changes could not be restored, run `git stash pop` in the Forge install directory.
+
+Unreadable Vercel sensitive variables are not copied into local snapshots or overwritten by `forge env push`; update them in Vercel directly when needed.

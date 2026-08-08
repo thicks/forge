@@ -173,19 +173,29 @@ function generateRouteFile(routes: ExtractedRoute[], routeDir: string): string {
 
 	// Collect unique auth middleware needed
 	const authImports = new Set<string>();
+	const unknownMiddleware = new Set<string>();
 	for (const route of routes) {
 		for (const mw of route.middleware) {
 			if (AUTH_MIDDLEWARE[mw]) {
 				authImports.add(AUTH_MIDDLEWARE[mw]);
+			} else {
+				unknownMiddleware.add(mw);
 			}
 		}
+	}
+	if (unknownMiddleware.size > 0) {
+		throw new Error(
+			`Cannot safely convert routes with unknown middleware: ${Array.from(unknownMiddleware).join(", ")}`,
+		);
 	}
 
 	// Build imports
 	const lines: string[] = [
 		'import { NextRequest, NextResponse } from "next/server";',
-		'import { storage } from "@/lib/storage";',
 	];
+	if (routes.some((route) => route.handlerBody.includes("storage"))) {
+		lines.push('import { storage } from "@/lib/storage";');
+	}
 
 	if (authImports.size > 0) {
 		const imports = Array.from(authImports).join(", ");
@@ -252,9 +262,8 @@ function generateRouteFile(routes: ExtractedRoute[], routeDir: string): string {
 			"\t\tconsole.error(`${request.method} ${request.url} error:`, error);",
 		);
 		lines.push(
-			'\t\tconst message = error instanceof Error ? error.message : "Internal server error";',
+			'\t\treturn NextResponse.json({ message: "Internal server error" }, { status: 500 });',
 		);
-		lines.push("\t\treturn NextResponse.json({ message }, { status: 500 });");
 		lines.push("\t}");
 		lines.push("}");
 		lines.push("");
@@ -276,6 +285,14 @@ export async function convertRoutes(
 	const grouped = groupRoutesByFile(manifest.routes);
 
 	for (const [dirPath, routes] of grouped) {
+		if (
+			routes.some((route) => route.handlerBody.includes("storage")) &&
+			!manifest.storageFile
+		) {
+			throw new Error(
+				`Cannot convert ${dirPath}: the route uses storage but server/storage.ts is missing`,
+			);
+		}
 		const fullDir = path.join(targetDir, "app", dirPath);
 		await ensureDir(fullDir);
 

@@ -9,6 +9,10 @@ const isWorkOSConfigured = !!(
 	process.env.WORKOS_API_KEY
 );
 
+if (process.env.NODE_ENV === "production" && !isWorkOSConfigured) {
+  throw new Error("WORKOS_CLIENT_ID and WORKOS_API_KEY are required in production");
+}
+
 // Simple session check for dev mode
 function checkDevSession(request: NextRequest): boolean {
 	const sessionCookie = request.cookies.get("dev_session");

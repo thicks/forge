@@ -3,7 +3,7 @@ export function generateBetterAuthServer(
 ): string {
 	const dbImport =
 		dbType === "supabase"
-			? 'import { db } from "@/db/server";'
+			? 'import { db } from "@/db";'
 			: 'import { db } from "@/db";';
 
 	return `import { betterAuth } from "better-auth";

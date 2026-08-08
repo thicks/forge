@@ -77,10 +77,10 @@ export function generateMigratePackageJson(
 		dev: "next dev",
 		build: "next build",
 		start: "next start",
-		lint: "eslint . --fix",
-		"lint:check": "eslint .",
-		format: "prettier --write .",
-		"format:check": "prettier --check .",
+		lint: "biome check --write .",
+		"lint:check": "biome check .",
+		format: "biome format --write .",
+		"format:check": "biome format .",
 		typecheck: "tsc --noEmit",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
@@ -94,6 +94,7 @@ export function generateMigratePackageJson(
 	}
 
 	const devDependencies: Record<string, string> = {
+		"@biomejs/biome": "^1.9.4",
 		"@eslint/eslintrc": "^3.0.0",
 		"@tailwindcss/postcss": "^4.2.1",
 		"@types/node": "^25.4.0",

@@ -160,7 +160,7 @@ async function runMigration(
 
 	// Phase 2c: Page conversion
 	await withSpinner("Converting pages", async () => {
-		await convertPages(manifest, targetDir, result);
+		await convertPages(manifest, targetDir, result, options.auth);
 	});
 
 	// Phase 2d: Component migration

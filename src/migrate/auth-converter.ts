@@ -114,6 +114,19 @@ export async function getCurrentUser() {
 `;
 	}
 
+	if (authType === "none") {
+		return `import { NextRequest, NextResponse } from "next/server";
+
+export async function requireAuth(_request: NextRequest): Promise<NextResponse> {
+  return NextResponse.json({ message: "Authentication is not configured" }, { status: 401 });
+}
+export const requireAdmin = requireAuth;
+export const requirePrivileged = requireAuth;
+export const requireDirectorOrAdmin = requireAuth;
+export async function getCurrentUser() { return null; }
+`;
+	}
+
 	// Demo auth helpers
 	return `import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -124,11 +137,13 @@ import { eq } from "drizzle-orm";
 /** Parse the demo session cookie */
 async function getSessionUser(): Promise<{ username: string } | null> {
 	const cookieStore = await cookies();
-	const session = cookieStore.get("demo_session");
+	const session = cookieStore.get("simple_session");
 	if (!session?.value) return null;
 
 	try {
-		return JSON.parse(Buffer.from(session.value, "base64").toString());
+		const parsed = JSON.parse(Buffer.from(session.value, "base64").toString());
+		if (!parsed.user || parsed.exp < Date.now()) return null;
+		return parsed.user;
 	} catch {
 		return null;
 	}
@@ -288,10 +303,9 @@ export async function convertAuth(
 	const appName = manifest.appName;
 
 	if (authType === "none") {
-		// Still generate minimal auth helpers so route imports don't break
 		await writeFile(
 			path.join(targetDir, "lib", "auth.ts"),
-			generateAuthHelpers("demo"),
+			generateAuthHelpers("none"),
 		);
 		result.filesWritten.push("lib/auth.ts");
 		return;
@@ -349,6 +363,12 @@ export async function convertAuth(
 			generateLoginApiRoute(appName),
 		);
 		result.filesWritten.push("app/api/auth/login/route.ts");
+
+		await writeFile(
+			path.join(targetDir, "app", "api", "auth", "user", "route.ts"),
+			`import { NextResponse } from "next/server";\nimport { getCurrentUser } from "@/lib/auth";\n\nexport async function GET() {\n  const user = await getCurrentUser();\n  return user ? NextResponse.json(user) : NextResponse.json({ message: "Unauthorized" }, { status: 401 });\n}\n`,
+		);
+		result.filesWritten.push("app/api/auth/user/route.ts");
 	} else if (authType === "demo") {
 		// Demo auth files - reuse existing forge templates
 		await ensureDir(path.join(targetDir, "app", "login"));

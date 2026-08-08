@@ -1,4 +1,5 @@
 import type { AuthType, DbType } from "../../migrate/types.js";
+import { safeProjectIdentifier } from "../../utils/identifiers.js";
 
 /**
  * Generates a .env.example for the migrated application,
@@ -11,6 +12,7 @@ export function generateMigrateEnvExample(options: {
 	extraVars: string[];
 }): string {
 	const lines: string[] = [];
+	const identifier = safeProjectIdentifier(options.appName);
 
 	// Database
 	if (options.db === "supabase") {
@@ -24,7 +26,7 @@ export function generateMigrateEnvExample(options: {
 		lines.push("# PostgreSQL Database");
 		lines.push("# Run `docker compose up -d` to start local PostgreSQL");
 		lines.push(
-			`DATABASE_URL=postgresql://postgres:postgres@localhost:5400/${options.appName}`,
+			`DATABASE_URL=postgresql://postgres:postgres@localhost:5400/${identifier}`,
 		);
 		lines.push("");
 	}

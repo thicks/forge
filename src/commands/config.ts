@@ -611,7 +611,7 @@ async function runConfigCheck(options: { json?: boolean }): Promise<void> {
 		);
 		results.vercel = { valid: result.valid, error: result.error };
 	} else {
-		results.vercel = { valid: false, error: "No Vercel token configured" };
+		results.vercel = { valid: true, error: "Not configured (optional)" };
 	}
 
 	// Validate Supabase (if configured)

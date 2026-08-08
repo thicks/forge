@@ -65,7 +65,9 @@ export function diffEnvVars(
 		const remoteValue = remoteVar?.value;
 
 		let status: DiffStatus;
-		if (localValue === undefined) {
+		if (remoteVar?.decrypted === false) {
+			status = "unchanged";
+		} else if (localValue === undefined) {
 			status = "added"; // only in remote
 		} else if (remoteValue === undefined) {
 			status = "removed"; // only in local
@@ -125,7 +127,12 @@ export async function writeEnvFile(
 		}
 	}
 
-	await writeFile(filePath, `${lines.join("\n")}\n`, "utf-8");
+	await writeFile(filePath, `${lines.join("\n")}\n`, {
+		encoding: "utf-8",
+		mode: 0o600,
+	});
+	const { chmod } = await import("node:fs/promises");
+	await chmod(filePath, 0o600);
 }
 
 /** Create a timestamped backup of a dotenv file before overwriting. */

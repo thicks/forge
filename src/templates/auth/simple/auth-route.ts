@@ -34,6 +34,21 @@ export async function POST(request: Request) {
 	return NextResponse.json({ success: true, user: { username } });
 }
 
+export async function GET() {
+	const cookieStore = await cookies();
+	const session = cookieStore.get(SESSION_COOKIE);
+	if (!session?.value) return NextResponse.json({ user: null }, { status: 401 });
+	try {
+		const data = JSON.parse(Buffer.from(session.value, "base64").toString());
+		if (!data.exp || data.exp < Date.now()) {
+			return NextResponse.json({ user: null }, { status: 401 });
+		}
+		return NextResponse.json({ user: data.user });
+	} catch {
+		return NextResponse.json({ user: null }, { status: 401 });
+	}
+}
+
 export async function DELETE() {
 	const cookieStore = await cookies();
 	cookieStore.delete(SESSION_COOKIE);
