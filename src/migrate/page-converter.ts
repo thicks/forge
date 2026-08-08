@@ -1,6 +1,6 @@
 import path from "node:path";
 import { ensureDir, fileExists, readFile, writeFile } from "../utils/index.js";
-import type { MigrationManifest, MigrationResult } from "./types.js";
+import type { AuthType, MigrationManifest, MigrationResult } from "./types.js";
 
 /**
  * Converts a wouter route path to a Next.js App Router directory path.
@@ -65,14 +65,22 @@ function rewriteImports(content: string): string {
 				nextImports.push("useRouter", "usePathname");
 			if (imports.includes("useParams")) nextImports.push("useParams");
 			if (imports.includes("useRoute")) nextImports.push("useParams");
-			if (imports.includes("Link")) nextImports.push("// Link from next/link");
+			if (imports.includes("Link")) nextImports.push("Link");
 			// Deduplicate
 			const unique = [...new Set(nextImports)].filter(
 				(name) => !emittedNavImports.has(name),
 			);
 			for (const name of unique) emittedNavImports.add(name);
 			if (unique.length === 0) return "";
-			return `import { ${unique.join(", ")} } from "next/navigation"`;
+			const navigationImports = unique.filter((name) => name !== "Link");
+			const lines: string[] = [];
+			if (navigationImports.length > 0) {
+				lines.push(
+					`import { ${navigationImports.join(", ")} } from "next/navigation"`,
+				);
+			}
+			if (unique.includes("Link")) lines.push('import Link from "next/link"');
+			return lines.join("\n");
 		},
 	);
 
@@ -98,10 +106,7 @@ function rewriteImports(content: string): string {
 	result = result.replace(/setLocation\(([^)]+)\)/g, "router.push($1)");
 
 	// Rewrite wouter Link to next/link
-	result = result.replace(
-		/import\s+.*from\s*["'`]wouter["'`]/g,
-		'import Link from "next/link"',
-	);
+	result = result.replace(/import\s+.*from\s*["'`]wouter["'`];?\n?/g, "");
 
 	// Remove Replit-specific imports
 	result = result.replace(
@@ -169,10 +174,16 @@ export async function convertPages(
 	manifest: MigrationManifest,
 	targetDir: string,
 	result: MigrationResult,
+	authType: AuthType,
 ): Promise<void> {
 	if (manifest.pages.length === 0) {
 		result.warnings.push("No pages found to convert");
 		return;
+	}
+	if (authType === "none" && manifest.pages.some((page) => page.requiresAuth)) {
+		throw new Error(
+			"Cannot migrate protected pages with --auth none; choose an auth provider.",
+		);
 	}
 
 	const hasAdminPages = manifest.pages.some((p) => p.isAdmin);

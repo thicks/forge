@@ -415,9 +415,7 @@ export async function analyzeSource(
 	const migrationsDir = path.join(absSource, "migrations");
 	let migrationFiles: string[] = [];
 	if (await fileExists(migrationsDir)) {
-		migrationFiles = (await listFiles(migrationsDir)).filter(
-			(f) => f.endsWith(".sql") || f.endsWith(".ts"),
-		);
+		migrationFiles = await listFiles(migrationsDir);
 	}
 
 	// Catalog components, hooks, and lib files

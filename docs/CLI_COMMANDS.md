@@ -165,3 +165,10 @@ pnpm dev migrate ./replit-app ./new-app --db postgres --auth workos --verbose
 | `--auth <type>` | `workos`, `demo`, `none` | `demo`     | Target auth                     |
 | `--dry-run`     | —                        | —          | Analyze source only             |
 | `--verbose`     | —                        | `false`    | Show detailed conversion output |
+# Safety and Automation Notes
+
+- `forge new --ci` refuses to replace the current directory, ancestors, protected home directories, or symlinked targets.
+- `forge clean` refuses protected paths and paths that resolve through symlinks outside the home directory.
+- GitHub setup never force-pushes. Reconcile divergent remote history manually before retrying.
+- `setup-vercel --auth` accepts `workos`, `simple`, `better-auth`, or `none`.
+- Cloud Supabase and Vercel setup fail rather than prompt when called from `--ci`.

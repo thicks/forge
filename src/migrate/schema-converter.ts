@@ -61,7 +61,8 @@ function rewriteStorageImports(content: string): string {
 function generateMigratedDrizzleConfig(db: DbType): string {
 	const outDir =
 		db === "supabase" ? "./supabase/migrations" : "./drizzle/migrations";
-	return `import { defineConfig } from "drizzle-kit";
+	return `import "dotenv/config";
+import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
 	schema: "./db/schema.ts",
@@ -161,11 +162,14 @@ export async function convertSchema(
 
 	// Copy migration files
 	for (const migFile of manifest.migrationFiles) {
-		const basename = path.basename(migFile);
-		const dest = path.join(targetDir, migrationsPath, basename);
+		const relativePath = path.relative(
+			path.join(manifest.sourceDir, "migrations"),
+			migFile,
+		);
+		const dest = path.join(targetDir, migrationsPath, relativePath);
 		await copyFile(migFile, dest);
 		result.filesWritten.push(
-			`${migrationsPath.split(path.sep).join("/")}/${basename}`,
+			path.join(migrationsPath, relativePath).split(path.sep).join("/"),
 		);
 	}
 }

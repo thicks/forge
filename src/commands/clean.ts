@@ -5,6 +5,7 @@ import { Command } from "commander";
 import prompts from "prompts";
 import { loadConfig } from "../utils/config-manager.js";
 import {
+	assertSafeCleanTarget,
 	execCommand,
 	fileExists,
 	ghAuthStatus,
@@ -82,11 +83,17 @@ export const cleanCommand = new Command("clean")
 		const cleanGitHub = !!options.github;
 		const cleanVercel = !!options.vercel;
 
-		// Guard against dangerous paths like /, ~, or system directories
+		// Guard against dangerous paths like /, ~, system directories, and symlinks.
 		if (!isSafePath(cwd)) {
 			log.error(
 				`Refusing to delete "${cwd}" — this path is too broad or points to a protected directory.`,
 			);
+			process.exit(1);
+		}
+		try {
+			await assertSafeCleanTarget(cwd);
+		} catch (error) {
+			log.error(error instanceof Error ? error.message : String(error));
 			process.exit(1);
 		}
 

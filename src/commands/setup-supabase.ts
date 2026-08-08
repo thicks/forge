@@ -29,8 +29,14 @@ export async function setupSupabase(
 	cwd: string,
 	projectName: string,
 	token?: string,
+	options: { ci?: boolean } = {},
 ): Promise<SupabaseProvisionResult | null> {
 	log.info(`Provisioning Supabase project: ${projectName}`);
+	if (options.ci) {
+		throw new Error(
+			"Supabase cloud provisioning requires interactive project and database credentials; run it outside --ci or pre-link the project and provide its password.",
+		);
+	}
 
 	const version = await supabaseVersion();
 	if (!version) {

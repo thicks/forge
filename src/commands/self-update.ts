@@ -59,13 +59,6 @@ export async function selfUpdate(ref: string): Promise<void> {
 		await execCommand("git", ["fetch", "origin", ref], { cwd: forgeDir });
 	});
 
-	// If the user is switching branches, check out the target.
-	if (currentBranch !== ref) {
-		await withSpinner(`Switching to ${ref}`, async () => {
-			await execCommand("git", ["checkout", ref], { cwd: forgeDir });
-		});
-	}
-
 	// Stash any local changes so the pull can proceed cleanly, then restore them.
 	let stashed = false;
 	try {
@@ -79,19 +72,28 @@ export async function selfUpdate(ref: string): Promise<void> {
 		// If stash fails we still attempt the pull
 	}
 
-	await withSpinner("Pulling latest changes", async () => {
-		await execCommand("git", ["pull", "--ff-only", "origin", ref], {
-			cwd: forgeDir,
-		});
-	});
+	try {
+		// If the user is switching branches, check out the target after stashing.
+		if (currentBranch !== ref) {
+			await withSpinner(`Switching to ${ref}`, async () => {
+				await execCommand("git", ["checkout", ref], { cwd: forgeDir });
+			});
+		}
 
-	if (stashed) {
-		try {
-			await execCommand("git", ["stash", "pop"], { cwd: forgeDir });
-		} catch {
-			log.warn(
-				"Local changes were stashed before the update but could not be restored. Run `git stash pop` in ~/.forge/cli to recover them.",
-			);
+		await withSpinner("Pulling latest changes", async () => {
+			await execCommand("git", ["pull", "--ff-only", "origin", ref], {
+				cwd: forgeDir,
+			});
+		});
+	} finally {
+		if (stashed) {
+			try {
+				await execCommand("git", ["stash", "pop"], { cwd: forgeDir });
+			} catch {
+				log.warn(
+					"Local changes were stashed before the update but could not be restored. Run `git stash pop` in ~/.forge/cli to recover them.",
+				);
+			}
 		}
 	}
 

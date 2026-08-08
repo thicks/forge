@@ -70,3 +70,8 @@ pnpm dev new my-app --auth better-auth --supabase
 **Note:** Better Auth requires a database because it stores users, sessions, and accounts in PostgreSQL tables. The `--auth better-auth` flag must be combined with `--db postgres`, `--db supabase`, or `--supabase`.
 
 Environment variables `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` are auto-generated during project creation.
+# Secrets and Reruns
+
+Vercel authentication secrets are created as sensitive variables. Re-running Vercel setup preserves existing secrets and configured production URLs rather than rotating or replacing them with localhost placeholders.
+
+WorkOS deployments must provide `WORKOS_CLIENT_ID` and `WORKOS_API_KEY` in production. The development fallback is not available when `NODE_ENV=production`.

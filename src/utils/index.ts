@@ -7,4 +7,6 @@ export * from "./fs.js";
 export * from "./logger.js";
 export * from "./spinner.js";
 export * from "./prompts.js";
+export * from "./path-safety.js";
+export * from "./identifiers.js";
 export * from "./skills.js";

@@ -142,3 +142,6 @@ my-app/
 - **Cursor** integration with project rules and editor settings
 - **pnpm** package manager
 - **Turborepo** (when `--monorepo`)
+# Migration Behavior
+
+Migrated apps preserve nested Drizzle migration paths and load `.env.local` for database commands. Unknown authentication middleware and protected pages migrated with `--auth none` fail closed instead of becoming public. Generated migration apps use Biome for linting and formatting.

@@ -82,6 +82,7 @@ import {
 } from "../templates/index.js";
 import { loadConfig } from "../utils/config-manager.js";
 import {
+	assertSafeNewTarget,
 	copyAsset,
 	copyFile,
 	ensureDir,
@@ -387,6 +388,12 @@ async function createStandaloneApp(
 					path.join(targetDir, "db", "middleware.ts"),
 					generateSupabaseMiddlewareClient(),
 				);
+				if (auth === "better-auth") {
+					await writeFile(
+						path.join(targetDir, "db", "index.ts"),
+						generatePostgresClient(),
+					);
+				}
 			} else {
 				await writeFile(
 					path.join(targetDir, "db", "index.ts"),
@@ -761,6 +768,7 @@ POSTHOG_API_KEY=
 				targetDir,
 				appName,
 				config.supabase?.token,
+				{ ci: options.ci },
 			);
 			if (supabaseResult?.databaseUrl) {
 				await writeFile(
@@ -778,7 +786,7 @@ POSTHOG_API_KEY=
 
 	// Set up Vercel if --vercel flag is set
 	if (options.vercel) {
-		await setupVercel(targetDir, appName, { auth, db });
+		await setupVercel(targetDir, appName, { auth, db, ci: options.ci });
 	}
 
 	log.success(`\n✨ Created ${appName} at ${targetDir}`);
@@ -1086,6 +1094,12 @@ async function createMonorepoApp(
 					path.join(appDir, "db", "middleware.ts"),
 					generateSupabaseMiddlewareClient(),
 				);
+				if (auth === "better-auth") {
+					await writeFile(
+						path.join(appDir, "db", "index.ts"),
+						generatePostgresClient(),
+					);
+				}
 			} else {
 				await writeFile(
 					path.join(appDir, "db", "index.ts"),
@@ -1464,6 +1478,7 @@ POSTHOG_API_KEY=
 				targetDir,
 				appName,
 				config.supabase?.token,
+				{ ci: options.ci },
 			);
 			if (supabaseResult?.databaseUrl) {
 				await writeFile(
@@ -1481,7 +1496,12 @@ POSTHOG_API_KEY=
 
 	// Set up Vercel if --vercel flag is set
 	if (options.vercel) {
-		await setupVercel(targetDir, appName, { auth, db, appName });
+		await setupVercel(targetDir, appName, {
+			auth,
+			db,
+			appName,
+			ci: options.ci,
+		});
 	}
 
 	log.success(
@@ -1648,6 +1668,12 @@ export const newCommand = new Command("new")
 			// For monorepo: app name is the argument, monorepo path is the option value
 			const targetDir = path.resolve(process.cwd(), options.monorepo);
 			const repoName = path.basename(targetDir);
+			try {
+				await assertSafeNewTarget(targetDir);
+			} catch (error) {
+				log.error(error instanceof Error ? error.message : String(error));
+				process.exit(1);
+			}
 
 			// Pre-flight: check if local directory already exists
 			if (await fileExists(targetDir)) {
@@ -1710,6 +1736,12 @@ export const newCommand = new Command("new")
 			// For standalone: resolve the directory and extract a clean app name
 			const targetDir = path.resolve(process.cwd(), appName);
 			const resolvedName = path.basename(targetDir);
+			try {
+				await assertSafeNewTarget(targetDir);
+			} catch (error) {
+				log.error(error instanceof Error ? error.message : String(error));
+				process.exit(1);
+			}
 
 			// Pre-flight: check if local directory already exists
 			if (await fileExists(targetDir)) {

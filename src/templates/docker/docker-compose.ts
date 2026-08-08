@@ -1,12 +1,15 @@
+import { safeProjectIdentifier } from "../../utils/identifiers.js";
+
 export function generateDockerCompose(appName: string): string {
+	const identifier = safeProjectIdentifier(appName);
 	return `services:
   postgres:
     image: postgres:16
-    container_name: ${appName}-db
+    container_name: ${identifier}-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ${appName}
+      POSTGRES_DB: ${identifier}
     ports:
       - "5400:5432"
     volumes:
@@ -18,14 +21,15 @@ volumes:
 }
 
 export function generateDockerComposeWithSeed(appName: string): string {
+	const identifier = safeProjectIdentifier(appName);
 	return `services:
   postgres:
     image: postgres:16
-    container_name: ${appName}-db
+    container_name: ${identifier}-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ${appName}
+      POSTGRES_DB: ${identifier}
     ports:
       - "5400:5432"
     volumes:

@@ -105,26 +105,29 @@ function isVersionBelow(
 
 export async function ensureSupabaseCLI(): Promise<void> {
 	if (await commandExists("supabase")) {
-		// Check version and upgrade if below minimum required
+		let stdout: string;
 		try {
-			const { stdout } = await execCommand("supabase", ["--version"]);
-			const installed = parseVersion(stdout);
-			const min = parseVersion(SUPABASE_MIN_VERSION);
-			if (isVersionBelow(installed, min)) {
-				log.info(
-					`Supabase CLI v${stdout.trim()} is below minimum v${SUPABASE_MIN_VERSION}. Upgrading...`,
-				);
-				await ensureBrewAvailable();
-				try {
-					await execCommand("brew", ["tap", "supabase/tap"]);
-				} catch {
-					// Tap may already exist.
-				}
-				await execCommand("brew", ["upgrade", "supabase/tap/supabase"]);
-				log.success("Supabase CLI upgraded");
-			}
+			({ stdout } = await execCommand("supabase", ["--version"]));
 		} catch {
-			// Non-fatal — version check is best-effort.
+			throw new Error(
+				"Could not determine the installed Supabase CLI version.",
+			);
+		}
+
+		const installed = parseVersion(stdout);
+		const min = parseVersion(SUPABASE_MIN_VERSION);
+		if (isVersionBelow(installed, min)) {
+			log.info(
+				`Supabase CLI v${stdout.trim()} is below minimum v${SUPABASE_MIN_VERSION}. Upgrading...`,
+			);
+			await ensureBrewAvailable();
+			try {
+				await execCommand("brew", ["tap", "supabase/tap"]);
+			} catch {
+				// Tap may already exist.
+			}
+			await execCommand("brew", ["upgrade", "supabase/tap/supabase"]);
+			log.success("Supabase CLI upgraded");
 		}
 		return;
 	}

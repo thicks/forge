@@ -295,6 +295,7 @@ export async function vercelEnvAdd(
 	environment: "production" | "preview" | "development",
 	cwd: string,
 	team: string,
+	options: { sensitive?: boolean; force?: boolean } = {},
 ): Promise<void> {
 	// Vercel CLI ≥50.23 requires an explicit git branch for preview in
 	// non-interactive mode. Passing "" targets all preview branches.
@@ -303,7 +304,14 @@ export async function vercelEnvAdd(
 			? ["env", "add", name, environment, "", "--yes"]
 			: ["env", "add", name, environment, "--yes"];
 
-	const fullArgs = withScope(positionalArgs, team);
+	const fullArgs = withScope(
+		[
+			...positionalArgs,
+			...(options.sensitive ? ["--sensitive"] : []),
+			...(options.force ? ["--force"] : []),
+		],
+		team,
+	);
 
 	// Pipe value via stdin — the canonical non-interactive approach for
 	// vercel env add. Using --value can hang when combined with --sensitive.

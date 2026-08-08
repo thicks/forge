@@ -32,14 +32,42 @@ import {
 	vercelWhoami,
 	withSpinner,
 } from "../utils/index.js";
+import {
+	findVercelProjectJson,
+	listVercelEnvVars,
+} from "../utils/vercel-env.js";
 import { constructDatabaseUrl, setupSupabase } from "./setup-supabase.js";
 
 type AuthType = "workos" | "simple" | "better-auth" | "none";
 type DbType = "postgres" | "supabase";
 
+type VercelEnvironment = "production" | "preview" | "development";
+
+async function ensureVercelEnvVar(
+	key: string,
+	value: string,
+	environment: VercelEnvironment,
+	appDir: string,
+	team: string,
+	sensitive = false,
+): Promise<void> {
+	const project = await findVercelProjectJson(appDir);
+	if (project) {
+		const existing = await listVercelEnvVars(
+			project.projectId,
+			project.orgId,
+			environment,
+		);
+		if (existing.some((envVar) => envVar.key === key)) return;
+	}
+
+	await vercelEnvAdd(key, value, environment, appDir, team, { sensitive });
+}
+
 interface SetupVercelOptions {
 	auth?: AuthType;
 	db?: DbType;
+	ci?: boolean;
 	/** When set, indicates monorepo mode. The app lives at apps/<appName>. */
 	appName?: string;
 }
@@ -50,6 +78,11 @@ export async function setupVercel(
 	options: SetupVercelOptions = {},
 ): Promise<void> {
 	const { auth = "none", db, appName } = options;
+	if (options.ci) {
+		throw new Error(
+			"Vercel setup requires interactive login, repository, and deployment decisions; run it outside --ci after linking and authenticating Vercel.",
+		);
+	}
 	const isMonorepo = !!appName;
 
 	// For monorepo, Vercel operations target the app directory
@@ -354,8 +387,7 @@ async function setupWorkOsEnvVars(appDir: string, team: string): Promise<void> {
 
 		for (const env of environments) {
 			await withSpinner(`Setting WORKOS_CLIENT_ID for ${env}`, async () => {
-				await vercelEnvRemove("WORKOS_CLIENT_ID", env, appDir, team);
-				await vercelEnvAdd(
+				await ensureVercelEnvVar(
 					"WORKOS_CLIENT_ID",
 					workosClientId,
 					env,
@@ -365,8 +397,14 @@ async function setupWorkOsEnvVars(appDir: string, team: string): Promise<void> {
 			});
 
 			await withSpinner(`Setting WORKOS_API_KEY for ${env}`, async () => {
-				await vercelEnvRemove("WORKOS_API_KEY", env, appDir, team);
-				await vercelEnvAdd("WORKOS_API_KEY", workosApiKey, env, appDir, team);
+				await ensureVercelEnvVar(
+					"WORKOS_API_KEY",
+					workosApiKey,
+					env,
+					appDir,
+					team,
+					true,
+				);
 			});
 		}
 	}
@@ -376,13 +414,13 @@ async function setupWorkOsEnvVars(appDir: string, team: string): Promise<void> {
 		const cookiePassword = crypto.randomBytes(32).toString("base64");
 
 		await withSpinner(`Setting WORKOS_COOKIE_PASSWORD for ${env}`, async () => {
-			await vercelEnvRemove("WORKOS_COOKIE_PASSWORD", env, appDir, team);
-			await vercelEnvAdd(
+			await ensureVercelEnvVar(
 				"WORKOS_COOKIE_PASSWORD",
 				cookiePassword,
 				env,
 				appDir,
 				team,
+				true,
 			);
 		});
 	}
@@ -395,13 +433,7 @@ async function setupWorkOsEnvVars(appDir: string, team: string): Promise<void> {
 		await withSpinner(
 			`Setting NEXT_PUBLIC_WORKOS_REDIRECT_URI for ${env}`,
 			async () => {
-				await vercelEnvRemove(
-					"NEXT_PUBLIC_WORKOS_REDIRECT_URI",
-					env,
-					appDir,
-					team,
-				);
-				await vercelEnvAdd(
+				await ensureVercelEnvVar(
 					"NEXT_PUBLIC_WORKOS_REDIRECT_URI",
 					redirectPlaceholder,
 					env,
@@ -454,13 +486,13 @@ async function setupBetterAuthEnvVars(
 		const betterAuthSecret = crypto.randomBytes(32).toString("base64");
 
 		await withSpinner(`Setting BETTER_AUTH_SECRET for ${env}`, async () => {
-			await vercelEnvRemove("BETTER_AUTH_SECRET", env, appDir, team);
-			await vercelEnvAdd(
+			await ensureVercelEnvVar(
 				"BETTER_AUTH_SECRET",
 				betterAuthSecret,
 				env,
 				appDir,
 				team,
+				true,
 			);
 		});
 	}
@@ -469,8 +501,13 @@ async function setupBetterAuthEnvVars(
 	const urlPlaceholder = "http://localhost:3000";
 	for (const env of environments) {
 		await withSpinner(`Setting BETTER_AUTH_URL for ${env}`, async () => {
-			await vercelEnvRemove("BETTER_AUTH_URL", env, appDir, team);
-			await vercelEnvAdd("BETTER_AUTH_URL", urlPlaceholder, env, appDir, team);
+			await ensureVercelEnvVar(
+				"BETTER_AUTH_URL",
+				urlPlaceholder,
+				env,
+				appDir,
+				team,
+			);
 		});
 	}
 
@@ -780,9 +817,12 @@ export const setupVercelCommand = new Command("setup-vercel")
 			}
 
 			// Validate auth option
-			if (options.auth && !["workos", "demo", "none"].includes(options.auth)) {
+			if (
+				options.auth &&
+				!["workos", "simple", "better-auth", "none"].includes(options.auth)
+			) {
 				log.error(
-					`Invalid auth type: ${options.auth}. Use 'workos', 'demo', or 'none'.`,
+					`Invalid auth type: ${options.auth}. Use 'workos', 'simple', 'better-auth', or 'none'.`,
 				);
 				process.exit(1);
 			}

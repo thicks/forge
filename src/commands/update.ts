@@ -10,6 +10,7 @@ import {
 	generateDbSchema,
 	generateDevLoginForm,
 	generateDockerComposeWithSeed,
+	generateDockerStartScript,
 	generateDrizzleConfig,
 	generateForgeRecommendationsMd,
 	generateLoginApiRoute,
@@ -65,7 +66,7 @@ interface UpdateOptions {
 }
 
 interface ExistingDbConfig {
-	type: DbType | null;
+	type: DbType | "unknown" | null;
 }
 
 async function hasVercelProjectLink(cwd: string): Promise<boolean> {
@@ -194,7 +195,7 @@ async function detectExistingDbConfig(cwd: string): Promise<ExistingDbConfig> {
 		// Fall through to unknown when the config cannot be parsed.
 	}
 
-	return { type: null };
+	return { type: "unknown" };
 }
 
 async function writeIfMissing(
@@ -454,6 +455,14 @@ async function configurePostgres(
 		if (await fileExists(path.join(cwd, "db-data", "restore.sh"))) {
 			await setExecutable(path.join(cwd, "db-data", "restore.sh"));
 		}
+		await writeIfMissing(
+			path.join(cwd, "scripts", "db-start"),
+			generateDockerStartScript(),
+			"Skipping scripts/db-start (already exists).",
+		);
+		if (await fileExists(path.join(cwd, "scripts", "db-start"))) {
+			await setExecutable(path.join(cwd, "scripts", "db-start"));
+		}
 
 		await writeIfMissing(
 			path.join(cwd, "db", "schema.ts"),
@@ -593,6 +602,16 @@ async function configureSupabase(
 			path.join(cwd, ".claude", "skills", "db-migrate", "SKILL.md"),
 			"Skipping db-migrate skill (already exists).",
 		);
+	});
+
+	await withSpinner("Ensuring supabase start script", async () => {
+		const scriptPath = path.join(cwd, "scripts", "supabase-start");
+		await writeIfMissing(
+			scriptPath,
+			generateSupabaseStartScript(),
+			"Skipping scripts/supabase-start (already exists).",
+		);
+		if (await fileExists(scriptPath)) await setExecutable(scriptPath);
 	});
 
 	log.success("Supabase database configuration updated.");

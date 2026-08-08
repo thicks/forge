@@ -1,8 +1,11 @@
+import { safeProjectIdentifier } from "../../utils/identifiers.js";
+
 export function generateSupabaseConfig(appName: string): string {
+	const identifier = safeProjectIdentifier(appName);
 	return `# Supabase local configuration
 # https://supabase.com/docs/guides/local-development
 
-project_id = "${appName}"
+ project_id = "${identifier}"
 
 [api]
 enabled = true

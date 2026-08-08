@@ -144,7 +144,11 @@ const envPullCommand = new Command("pull")
 
 		// Phase 1: always write full snapshot to .env.vercel.{env}
 		if (!dryRun) {
-			const remoteMap = new Map(remoteVars.map((v) => [v.key, v.value]));
+			const remoteMap = new Map(
+				remoteVars
+					.filter((v) => v.value !== undefined)
+					.map((v) => [v.key, v.value as string]),
+			);
 			await writeEnvFile(vercelFilePath, remoteMap);
 			console.log(
 				kleur.green(
@@ -217,7 +221,11 @@ const envPullCommand = new Command("pull")
 		}
 
 		// Apply selected remote values; local-only vars are always preserved
-		const remoteMap = new Map(remoteVars.map((v) => [v.key, v.value]));
+		const remoteMap = new Map(
+			remoteVars
+				.filter((v) => v.value !== undefined)
+				.map((v) => [v.key, v.value as string]),
+		);
 		const updated = new Map(localVars);
 
 		for (const key of selectedKeys) {
@@ -364,7 +372,7 @@ const envPushCommand = new Command("push")
 					project.orgId,
 					key,
 					localValue,
-					[targetEnv],
+					Array.from(new Set([...(existingRemote?.target ?? []), targetEnv])),
 					existingRemote?.id,
 					isSensitiveVar(key, existingRemote?.type) ? "sensitive" : "plain",
 				);
@@ -383,7 +391,10 @@ const envPushCommand = new Command("push")
 					kleur.dim(`  API failed for ${key}, falling back to vercel CLI…`),
 				);
 				try {
-					await vercelEnvAdd(key, localValue, targetEnv, projectDir, team);
+					await vercelEnvAdd(key, localValue, targetEnv, projectDir, team, {
+						sensitive: isSensitiveVar(key, existingRemote?.type),
+						force: !!existingRemote,
+					});
 					pushed++;
 				} catch (cliErr) {
 					console.error(kleur.red(`  Failed to push ${key}: ${cliErr}`));
