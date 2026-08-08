@@ -17,6 +17,16 @@ A CLI tool that scaffolds standardized applications with configurable database, 
 - **Migrate from Replit**: Convert Replit Express + Vite + React apps to Next.js
 - **Code Standards**: Biome (lint + format), Tailwind CSS v4, TypeScript strict mode
 
+## Why Forge?
+
+Forge makes it easier to set up a TypeScript Next.js application with a remote Git repository, database, and deployment. Once Forge finishes, you have a template app running as a preview deployment and ready to move toward production.
+
+It exists to:
+
+- **Save time** by handling tedious setup steps automatically
+- **Ensure consistency** with a shared application architecture across your projects
+- **Avoid snowflake applications** by giving your team a common foundation instead of having every app evolve differently
+
 ## Quick Start
 
 If you just want to create a new app quickly, copy/paste these commands in Terminal:
