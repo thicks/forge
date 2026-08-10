@@ -32,6 +32,15 @@ vi.mock("../commands/setup-vercel.js", () => ({
 	setupVercel: setupVercelMock,
 }));
 
+vi.mock("../utils/ensure-deps.js", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("../utils/ensure-deps.js")>();
+	return {
+		...actual,
+		ensureSupabaseCLI: vi.fn().mockResolvedValue(undefined),
+	};
+});
+
 import { update } from "../commands/update.js";
 import { log } from "../utils/logger.js";
 
