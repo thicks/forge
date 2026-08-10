@@ -21,6 +21,11 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      - name: Configure git identity
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
