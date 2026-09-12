@@ -8,7 +8,8 @@ FORGE_REPO="${FORGE_REPO:-thicks/forge}"
 FORGE_REF="${FORGE_REF:-main}"
 FORGE_INSTALL_DIR="${FORGE_INSTALL_DIR:-$HOME/.forge/cli}"
 FORGE_BIN_DIR="${FORGE_BIN_DIR:-$HOME/.forge/bin}"
-FORGE_SOURCE_DIR=""
+FORGE_SOURCE_DIR="${FORGE_SOURCE_DIR:-}"
+FORGE_SOURCE_CLEANUP=0
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 DEFAULT_NODE_VERSION="${DEFAULT_NODE_VERSION:-22}"
 
@@ -1051,7 +1052,21 @@ sync_forge_repo() {
 	local repo_https_url="https://github.com/${FORGE_REPO}.git"
 
 	mkdir -p "$(dirname "$FORGE_INSTALL_DIR")"
+	if [[ -n "$FORGE_SOURCE_DIR" && -f "$FORGE_SOURCE_DIR/package.json" ]]; then
+		info "Using forge source at $FORGE_SOURCE_DIR..."
+		return
+	fi
+
+	local script_root
+	script_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	if [[ -f "$script_root/package.json" && -d "$script_root/src" && -d "$script_root/assets" ]]; then
+		FORGE_SOURCE_DIR="$script_root"
+		info "Using local forge source at $FORGE_SOURCE_DIR..."
+		return
+	fi
+
 	FORGE_SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/forge-source.XXXXXX")"
+	FORGE_SOURCE_CLEANUP=1
 	info "Preparing forge source in a temporary build directory..."
 	if command_exists gh; then
 		if ! gh repo clone "$FORGE_REPO" "$FORGE_SOURCE_DIR"; then
@@ -1104,7 +1119,7 @@ install_forge_cli() {
 main() {
 	parse_args "$@"
 	detect_expert_mode
-	trap '[[ -n "$FORGE_SOURCE_DIR" && -d "$FORGE_SOURCE_DIR" ]] && rm -rf "$FORGE_SOURCE_DIR"' EXIT
+	trap '[[ "$FORGE_SOURCE_CLEANUP" == "1" && -n "$FORGE_SOURCE_DIR" && -d "$FORGE_SOURCE_DIR" ]] && rm -rf "$FORGE_SOURCE_DIR"' EXIT
 
 	if [[ "${FORGE_INSTALLER_SMOKE_TEST:-0}" == "1" ]]; then
 		run_smoke_test

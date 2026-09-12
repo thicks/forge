@@ -6,6 +6,7 @@ IFS=$'\n\t'
 FORGE_REPO="${FORGE_REPO:-thicks/forge}"
 FORGE_REF="${FORGE_REF:-main}"
 FORGE_INSTALL_DIR="${FORGE_INSTALL_DIR:-$HOME/.forge/cli}"
+FORGE_SOURCE_DIR=""
 
 BLUE="\033[1;34m"
 GREEN="\033[1;32m"
@@ -196,41 +197,32 @@ ensure_gh_git_auth() {
 	warn "If git prompts for a password, run: gh auth setup-git"
 }
 
-sync_private_repo() {
-	local parent_dir
-	parent_dir="$(dirname "$FORGE_INSTALL_DIR")"
-
-	mkdir -p "$parent_dir"
-
-	if [[ -d "$FORGE_INSTALL_DIR/.git" ]]; then
-		info "Updating forge source at $FORGE_INSTALL_DIR..."
-		git -C "$FORGE_INSTALL_DIR" fetch origin "$FORGE_REF"
-		git -C "$FORGE_INSTALL_DIR" checkout "$FORGE_REF"
-		git -C "$FORGE_INSTALL_DIR" pull --ff-only origin "$FORGE_REF"
-		success "Updated forge source"
-		return
+sync_private_source() {
+	local repo_https_url="https://github.com/${FORGE_REPO}.git"
+	FORGE_SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/forge-source.XXXXXX")"
+	info "Preparing forge source in a temporary build directory..."
+	if ! gh repo clone "$FORGE_REPO" "$FORGE_SOURCE_DIR"; then
+		warn "gh clone failed; trying git clone over HTTPS..."
+		git clone "$repo_https_url" "$FORGE_SOURCE_DIR"
 	fi
-
-	if [[ -e "$FORGE_INSTALL_DIR" ]]; then
-		error "Install directory exists but is not a git repo: $FORGE_INSTALL_DIR"
-		error "Move/remove it, then rerun this installer."
-		exit 1
-	fi
-
-	info "Cloning ${FORGE_REPO} into $FORGE_INSTALL_DIR..."
-	gh repo clone "$FORGE_REPO" "$FORGE_INSTALL_DIR" -- --branch "$FORGE_REF"
-	success "Cloned forge source"
+	git -C "$FORGE_SOURCE_DIR" fetch --depth=1 origin "$FORGE_REF"
+	git -C "$FORGE_SOURCE_DIR" checkout --detach FETCH_HEAD
+	success "Prepared forge source"
 }
 
 run_private_installer() {
-	local private_installer="$FORGE_INSTALL_DIR/install.sh"
+	local private_installer="$FORGE_SOURCE_DIR/install.sh"
 	if [[ ! -f "$private_installer" ]]; then
 		error "Could not find private installer at $private_installer"
 		exit 1
 	fi
 
 	info "Running forge installer..."
-	FORGE_REPO="$FORGE_REPO" FORGE_REF="$FORGE_REF" FORGE_INSTALL_DIR="$FORGE_INSTALL_DIR" bash "$private_installer"
+	FORGE_REPO="$FORGE_REPO" \
+		FORGE_REF="$FORGE_REF" \
+		FORGE_INSTALL_DIR="$FORGE_INSTALL_DIR" \
+		FORGE_SOURCE_DIR="$FORGE_SOURCE_DIR" \
+		bash "$private_installer"
 }
 
 main() {
@@ -256,7 +248,8 @@ main() {
 	ensure_gh
 	ensure_gh_auth
 	ensure_gh_git_auth
-	sync_private_repo
+	trap '[[ -n "$FORGE_SOURCE_DIR" && -d "$FORGE_SOURCE_DIR" ]] && rm -rf "$FORGE_SOURCE_DIR"' EXIT
+	sync_private_source
 	run_private_installer
 	success "Forge bootstrap finished"
 }
