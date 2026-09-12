@@ -8,6 +8,17 @@ If you are working directly in this repo and need local bootstrap:
 bash ./public-bootstrap.sh
 ```
 
+To build and install the checkout you already cloned, run:
+
+```bash
+./install.sh
+```
+
+The local installer uses that checkout as its build source and installs only
+the runtime bundle into `~/.forge/cli`. The hosted gist bootstrap clones the
+requested ref into a temporary build directory, then performs the same runtime
+installation. Neither flow keeps the source tree in the runtime directory.
+
 Install from a specific branch/tag/commit:
 
 ```bash
