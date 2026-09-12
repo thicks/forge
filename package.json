@@ -8,7 +8,7 @@
 		"forge": "./bin/forge.js"
 	},
 	"scripts": {
-		"install:forge": "pnpm build && pnpm link --global",
+		"install:forge": "pnpm build",
 		"publish:installer:gist": "FORGE_GIST_ID=<insert gist> bash ./scripts/publish-installer-gist.sh",
 		"dev": "tsx src/index.ts",
 		"dev:config": "tsx src/index.ts config",
