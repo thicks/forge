@@ -1083,11 +1083,16 @@ install_forge_cli() {
 		"$FORGE_SOURCE_DIR/dist" \
 		"$FORGE_SOURCE_DIR/install.sh" \
 		"$FORGE_SOURCE_DIR/package.json" \
+		"$FORGE_SOURCE_DIR/pnpm-lock.yaml" \
 		"$FORGE_INSTALL_DIR/"
+	(
+		cd "$FORGE_INSTALL_DIR"
+		pnpm install --prod --frozen-lockfile --ignore-scripts
+	)
 
 	install_forge_command
 
-	if command_exists forge; then
+	if forge --version >/dev/null 2>&1; then
 		success "forge CLI installed ($(forge --version))"
 		return
 	fi
