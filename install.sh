@@ -8,6 +8,7 @@ FORGE_REPO="${FORGE_REPO:-thicks/forge}"
 FORGE_REF="${FORGE_REF:-main}"
 FORGE_INSTALL_DIR="${FORGE_INSTALL_DIR:-$HOME/.forge/cli}"
 FORGE_BIN_DIR="${FORGE_BIN_DIR:-$HOME/.forge/bin}"
+FORGE_SOURCE_DIR=""
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 DEFAULT_NODE_VERSION="${DEFAULT_NODE_VERSION:-22}"
 
@@ -1050,41 +1051,39 @@ sync_forge_repo() {
 	local repo_https_url="https://github.com/${FORGE_REPO}.git"
 
 	mkdir -p "$(dirname "$FORGE_INSTALL_DIR")"
-
-	if [[ -d "$FORGE_INSTALL_DIR/.git" ]]; then
-		info "Updating forge source at $FORGE_INSTALL_DIR..."
-		git -C "$FORGE_INSTALL_DIR" fetch origin "$FORGE_REF"
-		git -C "$FORGE_INSTALL_DIR" checkout "$FORGE_REF"
-		git -C "$FORGE_INSTALL_DIR" pull --ff-only origin "$FORGE_REF"
-		success "Updated forge source"
-		return
-	fi
-
-	if [[ -e "$FORGE_INSTALL_DIR" ]]; then
-		error "Install directory exists but is not a git repo: $FORGE_INSTALL_DIR"
-		error "Move/remove it, then rerun this installer."
-		exit 1
-	fi
-
-	info "Cloning forge source to $FORGE_INSTALL_DIR..."
+	FORGE_SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/forge-source.XXXXXX")"
+	info "Preparing forge source in a temporary build directory..."
 	if command_exists gh; then
-		if ! gh repo clone "$FORGE_REPO" "$FORGE_INSTALL_DIR" -- --branch "$FORGE_REF"; then
+		if ! gh repo clone "$FORGE_REPO" "$FORGE_SOURCE_DIR"; then
 			warn "gh clone failed; trying git clone over HTTPS..."
-			git clone --branch "$FORGE_REF" "$repo_https_url" "$FORGE_INSTALL_DIR"
+			git clone "$repo_https_url" "$FORGE_SOURCE_DIR"
 		fi
 	else
-		git clone --branch "$FORGE_REF" "$repo_https_url" "$FORGE_INSTALL_DIR"
+		git clone "$repo_https_url" "$FORGE_SOURCE_DIR"
 	fi
-	success "Cloned forge source"
+	git -C "$FORGE_SOURCE_DIR" fetch --depth=1 origin "$FORGE_REF"
+	git -C "$FORGE_SOURCE_DIR" checkout --detach FETCH_HEAD
+	success "Prepared forge source"
 }
 
 install_forge_cli() {
-	info "Installing forge CLI globally..."
+	info "Building forge CLI..."
 	(
-		cd "$FORGE_INSTALL_DIR"
+		cd "$FORGE_SOURCE_DIR"
 		pnpm install
 		pnpm run install:forge
 	)
+
+	info "Installing the minimal forge runtime..."
+	rm -rf "$FORGE_INSTALL_DIR"
+	mkdir -p "$FORGE_INSTALL_DIR"
+	cp -R \
+		"$FORGE_SOURCE_DIR/assets" \
+		"$FORGE_SOURCE_DIR/bin" \
+		"$FORGE_SOURCE_DIR/dist" \
+		"$FORGE_SOURCE_DIR/install.sh" \
+		"$FORGE_SOURCE_DIR/package.json" \
+		"$FORGE_INSTALL_DIR/"
 
 	install_forge_command
 
@@ -1100,6 +1099,7 @@ install_forge_cli() {
 main() {
 	parse_args "$@"
 	detect_expert_mode
+	trap '[[ -n "$FORGE_SOURCE_DIR" && -d "$FORGE_SOURCE_DIR" ]] && rm -rf "$FORGE_SOURCE_DIR"' EXIT
 
 	if [[ "${FORGE_INSTALLER_SMOKE_TEST:-0}" == "1" ]]; then
 		run_smoke_test
@@ -1150,7 +1150,7 @@ main() {
 	# ─────────────────────────────────────────────────────────────────────────────
 	info "┌─────────────────────────────────────────────────────────────────────┐"
 	info "│  Phase 2/2: Installing forge CLI                                    │"
-	info "│  Cloning source, building, linking globally                         │"
+	info "│  Building and installing the minimal runtime                         │"
 	info "└─────────────────────────────────────────────────────────────────────┘"
 	info ""
 
@@ -1161,6 +1161,10 @@ main() {
 		info ""
 	fi
 	success "Forge bootstrap complete"
+
+	if [[ "${FORGE_SKIP_POST_INSTALL:-0}" == "1" ]]; then
+		return
+	fi
 
 	# Detect whether the forge binary is reachable in the current shell.
 	# If not, the user needs to reload their shell environment before proceeding.
