@@ -42,8 +42,8 @@ The bootstrap flow intentionally installs only the core tooling needed to get th
 - nvm
 - Node.js (resolved from this repo's `engines.node`; fallback is Node 22)
 - pnpm (via Corepack)
-- forge source sync to `~/.forge/cli`
-- Global `forge` command install
+- forge runtime bundle built from a temporary source checkout
+- Global `forge` command install (the source checkout is removed afterward)
 
 This keeps first-time install fast and avoids installing optional tooling before you need it.
 
